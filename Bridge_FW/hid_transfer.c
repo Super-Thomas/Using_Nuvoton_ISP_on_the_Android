@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "Nano100Series.h"
-#include "nuvo_isp.h"
 #include "hid_transfer.h"
 
 uint8_t volatile g_u8EP2Ready = 0;

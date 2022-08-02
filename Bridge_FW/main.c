@@ -11,7 +11,6 @@
 #include <stdio.h>
 #include "Nano100Series.h"
 #include "hid_transfer.h"
-#include "spi_flash.h"
 
 /*--------------------------------------------------------------------------*/
 void SYS_Init(void)
