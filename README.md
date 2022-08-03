@@ -1,2 +1,2 @@
-# Nano130_USB_UART_Bridge
-This project can Nuvoton ISP Firmware update on Android with USB HID(Android side)-UART(MCU side) communication
+# Nuvoton ISP Firmware update on the Android
+Please refer User_Guide.docx
