@@ -33,16 +33,16 @@ public class HidBridge {
 
     // Locker object that is responsible for locking read/write thread.
     private Object mLocker = new Object();
-    private Thread mReadingThread = null;
+    //private Thread mReadingThread = null;
 
     // The queue that contains the read data.
-    private Queue<byte[]> mReceivedQueue;
+    //private Queue<byte[]> mReceivedQueue;
 
     /**
      * Creates a hid bridge to the dongle. Should be created once.
      */
     public HidBridge() {
-        mReceivedQueue = new LinkedList<byte[]>();
+        //mReceivedQueue = new LinkedList<byte[]>();
         mbUsbReadyFlag = false;
     }
 
@@ -112,7 +112,7 @@ public class HidBridge {
                     IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
                     context.registerReceiver(mUsbReceiver, filter);
                     mUsbManager.requestPermission(mUsbDevice, mPermissionIntent);
-                    StartReadingThread();
+                    //StartReadingThread();
                     ((MainActivity)MainActivity.mContext).ShowISPFragment();
                 }
             });
@@ -124,29 +124,29 @@ public class HidBridge {
     /**
      * Closes the reading thread of the device.
      */
-    public void CloseTheDevice() {
+    /*public void CloseTheDevice() {
         StopReadingThread();
-    }
+    }*/
 
     /**
      * Starts the thread that continuously reads the data from the device.
      * Should be called in order to be able to talk with the device.
      */
-    public void StartReadingThread() {
+    /*public void StartReadingThread() {
         if (mReadingThread == null) {
             mReadingThread = new Thread(readerReceiver);
             mReadingThread.start();
         } else {
             // Reading thread already started
         }
-    }
+    }*/
 
     /**
      * Stops the thread that continuously reads the data from the device.
      * If it is stopped - talking to the device would be impossible.
      */
     @SuppressWarnings("deprecation")
-    public void StopReadingThread() {
+    /*public void StopReadingThread() {
         if (mReadingThread != null) {
             // Just kill the thread. It is better to do that fast if we need that asap.
             mReadingThread.stop();
@@ -154,7 +154,7 @@ public class HidBridge {
         } else {
             // No reading thread to stop
         }
-    }
+    }*/
 
     /**
      * Write data to the usb hid. Data is written as-is, so calling method is responsible for adding header data.
@@ -201,24 +201,88 @@ public class HidBridge {
     /**
      * @return true if there are any data in the queue to be read.
      */
-    public boolean IsThereAnyReceivedData() {
+    /*public boolean IsThereAnyReceivedData() {
         synchronized(mLocker) {
             return !mReceivedQueue.isEmpty();
         }
-    }
+    }*/
 
     /**
      * Queue the data from the read queue.
      * @return queued data.
      */
-    public byte[] GetReceivedDataFromQueue() {
+    /*public byte[] GetReceivedDataFromQueue() {
         synchronized(mLocker) {
             return mReceivedQueue.poll();
         }
+    }*/
+
+    public byte[] GetReceivedData() {
+        UsbEndpoint readEp;
+        UsbDeviceConnection readConnection = null;
+        UsbInterface readIntf = null;
+        boolean readerStartedMsgWasShown = false;
+
+        if (mUsbDevice == null) {
+            // No device to read from
+            return null;
+        }
+
+        if (GetUsbReadyFlag() == false) {
+            return null;
+        }
+
+        // Lock that is common for read/write methods.
+        synchronized (mLocker) {
+            try {
+                readIntf = mUsbDevice.getInterface(0);
+                readEp = readIntf.getEndpoint(0);
+
+                try {
+                    readConnection = mUsbManager.openDevice(mUsbDevice);
+                    if (readConnection == null) {
+                        // Cannot start reader because the user didn't gave me permissions or the device is not present. Retrying in 2 sec...
+                        return null;
+                    }
+
+                    // Claim and lock the interface in the android system.
+                    readConnection.claimInterface(readIntf, true);
+                } catch (SecurityException e) {
+                    // Cannot start reader because the user didn't gave me permissions. Retrying in 2 sec...
+                    return null;
+                }
+
+                // Read the data as a bulk transfer with the size = MaxPacketSize
+                int packetSize = readEp.getMaxPacketSize();
+                byte[] bytes = new byte[packetSize];
+                int r = readConnection.bulkTransfer(readEp, bytes, packetSize, 50);
+
+                // Release the interface lock.
+                readConnection.releaseInterface(readIntf);
+                readConnection.close();
+
+                if (r > 0) {
+                    return bytes;
+                }
+
+            } catch (NullPointerException e) {
+                // Error happened while reading. No device or the connection is busy
+                return null;
+            } catch (ThreadDeath e) {
+                if (readConnection != null) {
+                    readConnection.releaseInterface(readIntf);
+                    readConnection.close();
+                }
+
+                return null;
+            }
+        }
+
+        return null;
     }
 
     // The thread that continuously receives data from the dongle and put it to the queue.
-    private Runnable readerReceiver = new Runnable() {
+    /*private Runnable readerReceiver = new Runnable() {
         public void run() {
             UsbEndpoint readEp;
             UsbDeviceConnection readConnection = null;
@@ -311,10 +375,10 @@ public class HidBridge {
                 // As both read and write data methods lock each other - they cannot be run in parallel.
                 // Looks like Android is not so smart in planning the threads, so we need to give it a small time
                 // to switch the thread context.
-                Sleep(100);
+                Sleep(10);
             }
         }
-    };
+    };*/
 
     private void Sleep(int milliseconds) {
         try {

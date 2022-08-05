@@ -364,6 +364,6 @@ void Bridge_Process(void)
 				g_bUartDataReady = FALSE;
 				HID_SendData(g_u8Uart_rcvbuf, MAX_PKT_SIZE);
 		}
-				
-		TIMER_Delay(TIMER0, 10000); // 10 ms
+		
+		__WFI(); //TIMER_Delay(TIMER0, 1000); // 1 ms
 }

@@ -13,6 +13,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import java.io.FileNotFoundException;
@@ -43,8 +44,9 @@ public class NvtISPFragment extends Fragment {
     private static final char STATE_TRY_TO_CONNECT_USB = 0x01;
     private static final char STATE_WAITING_FOR_DEVICEID = 0x02;
     private static final char STATE_USB_CONNECTED = 0x03;
-    private static final char STATE_TRY_TO_PROGRAM = 0x04;
-    private static final char STATE_PROGRAM_IS_DONE = 0x05;
+    private static final char STATE_TRY_TO_PROGRAM_FOR_APROM = 0x04;
+    private static final char STATE_TRY_TO_PROGRAM_FOR_EXFLASH = 0x05;
+    private static final char STATE_PROGRAM_IS_DONE = 0x06;
     private int mState = STATE_INIT;
     private boolean mbConnectFlag = false;
 
@@ -61,9 +63,14 @@ public class NvtISPFragment extends Fragment {
     byte[] mExFlashFileBuffer;
 
     private boolean mUpdateFlag;
+    private int mPercent;
+    private int mTotalLength;
     private int mUpdateLength;
+    private int mUpdateLengthForAprom;
+    private int mUpdateLengthForExFlash;
     private int mStartAddress;
     private int mCheckSum;
+    private int mCmdIndex = 18;
 
     // Command List for ISP Tool
     private static final int CMD_UPDATE_APROM = 0x000000A0;
@@ -84,13 +91,19 @@ public class NvtISPFragment extends Fragment {
     private static final int CMD_WRITE_CHECKSUM = 0x000000C9;
     private static final int CMD_GET_FLASHMODE = 0x000000CA;
     private static final int CMD_RESEND_PACKET = 0x000000FF;
+    private static final int CMD_ERASE_SPIFLASH = 0x000000D0;
+    private static final int CMD_UPDATE_SPIFLASH = 0x000000D1;
 
     Button mBtnConnect;
     Button mBtnAprom;
+    Button mBtnExFlash;
     Button mBtnProgram;
     TextView mTvState;
     TextView mTvDeviceName;
     TextView mTvAprom;
+    TextView mTvExFlash;
+    ProgressBar mProgressBar;
+    TextView mTvPercent;
 
     public NvtISPFragment() {
         // Required empty public constructor
@@ -131,10 +144,16 @@ public class NvtISPFragment extends Fragment {
 
         mBtnConnect = (Button)mView.findViewById(R.id.button_connect);
         mBtnAprom = (Button)mView.findViewById(R.id.button_aprom);
+        mBtnExFlash = (Button)mView.findViewById(R.id.button_exflash);
         mBtnProgram = (Button)mView.findViewById(R.id.button_program);
         mTvState = (TextView)mView.findViewById(R.id.textView_state);
         mTvDeviceName = (TextView)mView.findViewById(R.id.textView_devicename);
         mTvAprom = (TextView)mView.findViewById(R.id.textView_aprom);
+        mTvExFlash = (TextView)mView.findViewById(R.id.textView_exflash);
+        mProgressBar = (ProgressBar)mView.findViewById(R.id.progressBar) ;
+        mTvPercent = (TextView)mView.findViewById(R.id.textView_percent);
+
+        mProgressBar.setProgress(0);
 
         mBtnConnect.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -165,23 +184,41 @@ public class NvtISPFragment extends Fragment {
             }
         });
 
+        mBtnExFlash.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mExFlashFileSize = 0;
+                mExFlashFileBuffer = null;
+                mExFlashUri = null;
+                mExFlashFileName = "";
+                System.gc();
+
+                ((MainActivity)getActivity()).OpenFileDialog(true);
+            }
+        });
+
         mBtnProgram.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 // If there haven't usb connection,
                 if (mbConnectFlag == false) {
                     // Please connect USB
-                    ((MainActivity)getActivity()).ShowAlertDialog("Please connect USB");
+                    ((MainActivity)getActivity()).ShowToastMessage("Please connect USB");
                 }
-                else if (mApromUri == null || mApromFileName.length() <= 0 || mApromFileSize <= 0 || mApromFileBuffer == null) {
-                    // Please select APROM file
-                    ((MainActivity)getActivity()).ShowAlertDialog("Please select file for APROM");
+                else if ((mApromUri == null || mApromFileName.length() <= 0 || mApromFileSize <= 0 || mApromFileBuffer == null) &&
+                        (mExFlashUri == null || mExFlashFileName.length() <= 0 || mExFlashFileSize <= 0 || mExFlashFileBuffer == null)) {
+                    // Please select APROM or External Flash file
+                    ((MainActivity)getActivity()).ShowToastMessage("Please select file for APROM or External Flash");
                 }
-                else if (mState != STATE_TRY_TO_PROGRAM) {
+                else if (mState != STATE_TRY_TO_PROGRAM_FOR_APROM && mState != STATE_TRY_TO_PROGRAM_FOR_EXFLASH) {
                     mUpdateFlag = true;
+                    mPercent = 0;
                     mStartAddress = 0;
                     mUpdateLength = 0;
-                    mState = STATE_TRY_TO_PROGRAM;
+                    mUpdateLengthForAprom = 0;
+                    mUpdateLengthForExFlash = 0;
+                    mTotalLength = mApromFileSize + mExFlashFileSize;
+                    mState = STATE_TRY_TO_PROGRAM_FOR_APROM;
                 }
             }
         });
@@ -240,22 +277,90 @@ public class NvtISPFragment extends Fragment {
         return bRet;
     }
 
-    public boolean DoProgram()
+    public boolean ReadFileForExFlash() {
+        boolean bRet = false;
+
+        if (mExFlashUri != null) {
+            try {
+                InputStream in = getActivity().getContentResolver().openInputStream(mExFlashUri);
+                mExFlashFileSize = GetFileSize(in);
+
+                if (mExFlashFileSize > 0 && mExFlashFileBuffer == null) {
+                    mExFlashFileBuffer = new byte[mExFlashFileSize];
+                    while (in.read(mExFlashFileBuffer) > 0) {
+                        // Read size: + length
+                    }
+                }
+
+                in.close();
+
+                bRet = true;
+            } catch (FileNotFoundException e) {
+                //e.printStackTrace();
+            } catch (IOException e) {
+                //e.printStackTrace();
+            }
+        }
+
+        return bRet;
+    }
+
+    public boolean DoProgramForAprom()
     {
         boolean bRet = false;
 
         if (mApromUri != null && mApromFileBuffer != null) {
             if (mUpdateFlag == true) {
-                if (mUpdateLength < mApromFileSize) {
-                    mUpdateLength += UpdateAPROM(mStartAddress, mApromFileSize, mStartAddress + mUpdateLength, mUpdateLength, mApromFileBuffer);
+                if (mUpdateLengthForAprom < mApromFileSize) {
+                    int updateSize = UpdateAPROM(mStartAddress, mApromFileSize, mStartAddress + mUpdateLengthForAprom, mUpdateLengthForAprom, mApromFileBuffer);
+                    mUpdateLengthForAprom += updateSize;
+                    mUpdateLength += updateSize;
+                    float fPercent = (float)mUpdateLength / (float)mTotalLength * 100.0f;
+                    mPercent = (int)(Math.round(fPercent));
+                    mUpdateFlag = false;
+
+                    UpdateGUI();
+                }
+                else {
+                    mState = STATE_TRY_TO_PROGRAM_FOR_EXFLASH;
+                }
+            }
+
+            bRet = true;
+        }
+        else {
+            mState = STATE_TRY_TO_PROGRAM_FOR_EXFLASH;
+        }
+
+        return bRet;
+    }
+
+    public boolean DoProgramForExFlash()
+    {
+        boolean bRet = false;
+
+        if (mExFlashUri != null && mExFlashFileBuffer != null) {
+            if (mUpdateFlag == true) {
+                if (mUpdateLengthForExFlash < mExFlashFileSize) {
+                    int updateSize = UpdateExFlash(mStartAddress, mExFlashFileSize, mStartAddress + mUpdateLengthForExFlash, mUpdateLengthForExFlash, mExFlashFileBuffer);
+                    mUpdateLengthForExFlash += updateSize;
+                    mUpdateLength += updateSize;
+                    float fPercent = (float)mUpdateLength / (float)mTotalLength * 100.0f;
+                    mPercent = (int)(Math.round(fPercent));
+                    mUpdateFlag = false;
                 }
                 else {
                     mState = STATE_PROGRAM_IS_DONE;
                 }
-                mUpdateFlag = false;
+
+                UpdateGUI();
             }
 
             bRet = true;
+        }
+        else {
+            mState = STATE_PROGRAM_IS_DONE;
+
             UpdateGUI();
         }
 
@@ -284,9 +389,8 @@ public class NvtISPFragment extends Fragment {
         byte[] Bytes = new byte[64];
 
         if (startAddr == currAddr) {
-            if (writeLength > 64 - 8/*start_addr, total_len*/) {
-                writeLength = 64 - 8/*start_addr, total_len*/;
-                writeLength = writeLength - 8;
+            if (writeLength > 64 - 16/*start_addr, total_len*/) {
+                writeLength = 64 - 16;
             }
 
             Bytes[0] = (byte)CMD_UPDATE_APROM;
@@ -294,10 +398,10 @@ public class NvtISPFragment extends Fragment {
             Bytes[2] = (byte)(CMD_UPDATE_APROM >> 16);
             Bytes[3] = (byte)(CMD_UPDATE_APROM >> 24);
 
-            //Bytes[4] = (byte)m_uCmdIndex;
-            //Bytes[5] = (byte)(m_uCmdIndex >> 8);
-            //Bytes[6] = (byte)(m_uCmdIndex >> 16);
-            //Bytes[7] = (byte)(m_uCmdIndex >> 24);
+            Bytes[4] = (byte)mCmdIndex;
+            Bytes[5] = (byte)(mCmdIndex >> 8);
+            Bytes[6] = (byte)(mCmdIndex >> 16);
+            Bytes[7] = (byte)(mCmdIndex >> 24);
 
             Bytes[8] = (byte)startAddr;
             Bytes[9] = (byte)(startAddr >> 8);
@@ -315,26 +419,65 @@ public class NvtISPFragment extends Fragment {
             ((MainActivity)getActivity()).GetHidBridge().WriteData(Bytes);
         }
         else {
-            if (writeLength > 64) {
-                writeLength = 64;
-                writeLength = writeLength - 8;
+            if (writeLength > 64 - 8) {
+                writeLength = 64 - 8;
             }
 
-            //Bytes[0] = (byte)0x00;
-            //Bytes[1] = (byte)(0x00 >> 8);
-            //Bytes[2] = (byte)(0x00 >> 16);
-            //Bytes[3] = (byte)(0x00 >> 24);
+            Bytes[0] = (byte)0x00;
+            Bytes[1] = (byte)(0x00 >> 8);
+            Bytes[2] = (byte)(0x00 >> 16);
+            Bytes[3] = (byte)(0x00 >> 24);
 
-            //Bytes[4] = (byte)m_uCmdIndex;
-            //Bytes[5] = (byte)(m_uCmdIndex >> 8);
-            //Bytes[6] = (byte)(m_uCmdIndex >> 16);
-            //Bytes[7] = (byte)(m_uCmdIndex >> 24);
+            Bytes[4] = (byte)mCmdIndex;
+            Bytes[5] = (byte)(mCmdIndex >> 8);
+            Bytes[6] = (byte)(mCmdIndex >> 16);
+            Bytes[7] = (byte)(mCmdIndex >> 24);
 
             System.arraycopy(fileBuffer, i, Bytes, 8, writeLength);
 
             mCheckSum = CalCheckSum(Bytes, 64);
             ((MainActivity)getActivity()).GetHidBridge().WriteData(Bytes);
         }
+
+        updateLength = writeLength;
+
+        return updateLength;
+    }
+
+    public int UpdateExFlash(int startAddr, int totalLength, int currAddr, int i, byte[] fileBuffer)
+    {
+        int updateLength = -1;
+        int writeLength = totalLength - (currAddr - startAddr);
+        byte[] Bytes = new byte[64];
+
+        if (writeLength > 64 - 16/*start_addr, total_len*/) {
+            writeLength = 64 - 16;
+        }
+
+        Bytes[0] = (byte)CMD_UPDATE_SPIFLASH;
+        Bytes[1] = (byte)(CMD_UPDATE_SPIFLASH >> 8);
+        Bytes[2] = (byte)(CMD_UPDATE_SPIFLASH >> 16);
+        Bytes[3] = (byte)(CMD_UPDATE_SPIFLASH >> 24);
+
+        Bytes[4] = (byte)mCmdIndex;
+        Bytes[5] = (byte)(mCmdIndex >> 8);
+        Bytes[6] = (byte)(mCmdIndex >> 16);
+        Bytes[7] = (byte)(mCmdIndex >> 24);
+
+        Bytes[8] = (byte)startAddr;
+        Bytes[9] = (byte)(startAddr >> 8);
+        Bytes[10] = (byte)(startAddr >> 16);
+        Bytes[11] = (byte)(startAddr >> 24);
+
+        Bytes[12] = (byte)writeLength;
+        Bytes[13] = (byte)(writeLength >> 8);
+        Bytes[14] = (byte)(writeLength >> 16);
+        Bytes[15] = (byte)(writeLength >> 24);
+
+        System.arraycopy(fileBuffer, i, Bytes, 16, writeLength);
+
+        mCheckSum = CalCheckSum(Bytes, 64);
+        ((MainActivity)getActivity()).GetHidBridge().WriteData(Bytes);
 
         updateLength = writeLength;
 
@@ -361,7 +504,7 @@ public class NvtISPFragment extends Fragment {
         return mExFlashFileName;
     }
 
-    public void SetExFlashileName(String input) {
+    public void SetExFlashFileName(String input) {
         mExFlashFileName = input;
     }
 
@@ -391,10 +534,16 @@ public class NvtISPFragment extends Fragment {
 
             mTvDeviceName.setText((String)mNvtChipInfo.GetPartNumber());
             mTvAprom.setText((String)mApromFileName);
+            mTvExFlash.setText((String)mExFlashFileName);
+
+            mProgressBar.setProgress(mPercent);
+            String text = "";
+            text = Integer.toString(mPercent) + "%";
+            mTvPercent.setText((String)text);
 
             if (mState == STATE_PROGRAM_IS_DONE)
             {
-                ((MainActivity)getActivity()).ShowAlertDialog("Program is done");
+                ((MainActivity)getActivity()).ShowToastMessage("Program is done");
                 mState = STATE_USB_CONNECTED;
             }
         }
@@ -484,7 +633,8 @@ public class NvtISPFragment extends Fragment {
         @Override
         public void run() {
             while (true) {
-                byte[] recvData = ((MainActivity)getActivity()).GetHidBridge().GetReceivedDataFromQueue();
+                //byte[] recvData = ((MainActivity)getActivity()).GetHidBridge().GetReceivedDataFromQueue();
+                byte[] recvData = ((MainActivity)getActivity()).GetHidBridge().GetReceivedData();
                 if (recvData != null) {
                     RecvProc(recvData);
                 }
@@ -497,14 +647,17 @@ public class NvtISPFragment extends Fragment {
                         break;
                     case STATE_USB_CONNECTED:
                         break;
-                    case STATE_TRY_TO_PROGRAM:
-                        DoProgram();
+                    case STATE_TRY_TO_PROGRAM_FOR_APROM:
+                        DoProgramForAprom();
+                        break;
+                    case STATE_TRY_TO_PROGRAM_FOR_EXFLASH:
+                        DoProgramForExFlash();
                         break;
                     default:
                         break;
                 }
 
-                Sleep(40);
+                //Sleep(1);
             }
         }
     };

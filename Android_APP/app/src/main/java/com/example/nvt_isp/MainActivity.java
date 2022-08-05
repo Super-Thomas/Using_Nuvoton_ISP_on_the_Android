@@ -8,8 +8,11 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
+import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
     public static Context mContext;
@@ -67,10 +70,16 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == REQEUST_CODE_OPEN_FILE_FOR_APROM && resultCode == RESULT_OK) {
             Uri uri = data.getData(); //The uri with the location of the file
             ((NvtISPFragment)mNvtISPFragment).SetApromUri(uri);
-            String fileName = uri.getLastPathSegment();
-            ((NvtISPFragment)mNvtISPFragment).SetApromFileName(fileName);
+            ((NvtISPFragment)mNvtISPFragment).SetApromFileName(GetFileName(uri));
             ((NvtISPFragment)mNvtISPFragment).UpdateGUI();
             ((NvtISPFragment)mNvtISPFragment).ReadFileForAprom();
+        }
+        else if (requestCode == REQEUST_CODE_OPEN_FILE_FOR_EXFLASH && resultCode == RESULT_OK) {
+            Uri uri = data.getData(); //The uri with the location of the file
+            ((NvtISPFragment)mNvtISPFragment).SetExFlashUri(uri);
+            ((NvtISPFragment)mNvtISPFragment).SetExFlashFileName(GetFileName(uri));
+            ((NvtISPFragment)mNvtISPFragment).UpdateGUI();
+            ((NvtISPFragment)mNvtISPFragment).ReadFileForExFlash();
         }
     }
 
@@ -82,5 +91,29 @@ public class MainActivity extends AppCompatActivity {
         alertBuilder.setPositiveButton("OK", null);
 
         alertBuilder.show();
+    }
+
+    public void ShowToastMessage(String text) {
+        Toast.makeText(getApplicationContext(), text, Toast.LENGTH_LONG).show();
+    }
+
+    public String GetFileName(Uri uri) {
+        String result = null;
+        if (uri.getScheme().equals("content")) {
+            Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+            try {
+                if (cursor != null && cursor.moveToFirst()) {
+                    result = cursor.getString(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME));
+                }
+            } finally {
+                if (cursor != null) {
+                    cursor.close();
+                }
+            }
+        }
+        if (result == null) {
+            result = uri.getLastPathSegment();
+        }
+        return result;
     }
 }

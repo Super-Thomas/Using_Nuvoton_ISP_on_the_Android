@@ -2,7 +2,7 @@ package com.example.nvt_isp;
 
 public class NvtChipInfo {
     // Number of supported devices
-    private static final int MAX_DEVICE_COUNT = 30;
+    private static final int MAX_DEVICE_COUNT = 31;
     private NvtPartNumID[] mNvtPartNumID;
 
     // Static Info.
@@ -16,6 +16,7 @@ public class NvtChipInfo {
     private static final int ISD_9160_SERIES = 0x100003; // I9160/N575
     private static final int ISD_91300_SERIES = 0x100004;
     private static final int ISD_91000_SERIES = 0x100005;
+    private static final int NPCx_SERIES = 0x100006;
     private static final int ISD_96000_SERIES = 0x100007;
     private static final int IDD_DIALOG_CONFIGURATION_MINI51CN = 5085;
     private static final int IDD_DIALOG_CONFIGURATION_NANO100BN = 144;
@@ -36,6 +37,7 @@ public class NvtChipInfo {
         mNvtPartNumID[i++] = new NvtPartNumID("I91361", 0x1D010284, ISD_91300_SERIES);
         mNvtPartNumID[i++] = new NvtPartNumID("I91032F", 0x1D010362, ISD_91000_SERIES);
         mNvtPartNumID[i++] = new NvtPartNumID("I96100", 0x1D010800, ISD_96000_SERIES);
+        mNvtPartNumID[i++] = new NvtPartNumID("I94124C", 0x1D0705BA, NPCx_SERIES);
 
         /* MINI51DE */
         mNvtPartNumID[i++] = new NvtPartNumID("MINI51LDE", 0x20205100, IDD_DIALOG_CONFIGURATION_MINI51CN);
