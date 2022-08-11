@@ -61,10 +61,10 @@ You can see "NvtChipInfo.java" in android app source tree. You can add parts inf
 https://github.com/OpenNuvoton/ISPTool/blob/master/NuvoISP/DataBase/PartNumID.cpp
 
 ## Thanks to
-https://gist.github.com/ns50254/e5a265990eb8b145d04d
-https://github.com/OpenNuvoton/ISPTool
-https://github.com/OpenNuvoton/Nano100B_BSP/tree/master/SampleCode/StdDriver/USBD_HID_Transfer
-https://github.com/OpenNuvoton/Nano100B_BSP/tree/master/SampleCode/StdDriver/UART_TxRx_Function
+https://gist.github.com/ns50254/e5a265990eb8b145d04d<br />
+https://github.com/OpenNuvoton/ISPTool<br />
+https://github.com/OpenNuvoton/Nano100B_BSP/tree/master/SampleCode/StdDriver/USBD_HID_Transfer<br />
+https://github.com/OpenNuvoton/Nano100B_BSP/tree/master/SampleCode/StdDriver/UART_TxRx_Function<br />
 https://github.com/OpenNuvoton/Mini51BSP/tree/master/SampleCode/ISP/ISP_UART
 
 
