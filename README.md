@@ -26,7 +26,7 @@ If you use Bridge firmware in this project, you can ISP firmware update to MCU n
 |3|NuTiny-SDK-Mini54FDE|V1.0, with ISP_UART firmware in LDROM|Hardware|
 
 ## System Overview(used Bridge firmware)
-![image](https://user-images.githubusercontent.com/99227045/184124866-4104d5bf-9f39-47bf-970f-824cde9ae0a6.png)
+![image](https://user-images.githubusercontent.com/99227045/184124866-4104d5bf-9f39-47bf-970f-824cde9ae0a6.png)<br />
 Your Android device and Nu-LB-NANO130(CON2) are connected by USB. Nu-LB-NANO130(PD0, PD1) and NuTiny-SDK-Mini54FDE(P12, P13) are connected by UART.
 
 ## How to ISP Firmware update on the Android(used Bridge firmware)
