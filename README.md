@@ -16,7 +16,7 @@ If you use Bridge firmware in this project, you can ISP firmware update to MCU n
 |---|---|---|---|
 |1|ARM MDK|Keil uVision Version 5.34.0.0|IDE|
 |2|Nano100B SDK|Version 2021.9.23||
-|3|Nano100B SDK|REV 1.2|Hardware|
+|3|Nu-LB-NANO130|REV 1.2|Hardware|
 
 ### For ISP Test
 |N|Name|Description|Note|
