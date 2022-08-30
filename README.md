@@ -61,7 +61,7 @@ You can see "NvtChipInfo.java" in android app source tree. You can add parts inf
 https://github.com/OpenNuvoton/ISPTool/blob/master/NuvoISP/DataBase/PartNumID.cpp
 
 ## Packet Description
-Packet size is 64 Byte. There have 4 Byte of command list and 4 Byte of command index. You can ignore command index in the packet.
+Packet size is 64 Byte. There have 4 Byte of command list and 4 Byte of command index. You can ignore command index in the packet.<br />
 ![image](https://user-images.githubusercontent.com/99227045/187109385-1f5d628d-3b3e-4147-8a75-4212bc504247.png)
 
 Please refer table below for command list.
