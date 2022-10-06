@@ -98,7 +98,7 @@ Start Address: This is start address that where you need write buffer data.<br /
 Total Length: This is total length for buffer you needs write to flash.<br /><br />
 You can send following packet after sent packet for first time.<br />
 Host -> Target board<br />
-![image](https://user-images.githubusercontent.com/99227045/187120873-208b2402-b0fa-4a24-a9e1-f0048a478bed.png)
+![image](https://user-images.githubusercontent.com/99227045/194185321-6a384b81-fe77-48d3-b3fe-4a0fb63326c8.png)
 
 If target board received this packet from Host, Target board will send packet include CRC for received packet to Host.<br />
 Target board -> Host<br />
