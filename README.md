@@ -2,7 +2,7 @@
 
 ## Intro
 You can ISP firmware update to Nuvoton MCU on the Android with this project. I will use USB HID in Android Device for this. USB HID protocol is follow to “NuMicro ISP Programming Tool version 4.03 for Windows OS” provided by Nuvoton. So if you programed ISP firmware for USB HID in Nuvoton SDK to your Nuvoton parts, your Nuvoton parts can connect to Android app in this project with USB HID.<br />
-If you use Bridge firmware in this project, you can ISP firmware update to MCU not support USB. In fact, Bridge firmware is not required if you will use USB CDC in Android. But if you want to implement another function in Bridge firmware, it would be better choice.
+If you use Bridge firmware in this project, you can ISP firmware update to MCU not support USB. In fact, Bridge firmware is not required if you will use USB CDC in Android. But if you want to implement another function in Bridge firmware, it would be better choice. If you looking for simple version of Nuvoton ISP program on Windows OS, Please refer [Nuvoton_ISP_Lite_for_Windows](https://github.com/Super-Thomas/Nuvoton_ISP_Lite_for_Windows).
 
 ## Development environment
 ### For Android app
